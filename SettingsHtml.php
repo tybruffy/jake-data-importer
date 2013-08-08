@@ -7,6 +7,8 @@ Class JDI_SettingsHTML extends JDI_PluginObject {
 	function __construct() {
 		self::plugin_info();
 		wp_enqueue_style("importer-css", self::$plugin_url."/assets/css/base.css");
+
+		$this->processor = new JDI_Processor( $this, $_POST, $_FILES );
 	}
 
 	public function add_message( $type, $text ) {

@@ -49,7 +49,7 @@ class ResourceList {
 		if( ! empty( $this->resources ) ) {
 			$this->save_resources_to_db();
 		}
-		echo "<pre>" . print_r($this->errors, true) . "</pre>";
+		// echo "<pre>" . print_r($this->errors, true) . "</pre>";
 	}
 
 
@@ -95,77 +95,21 @@ class ResourceList {
 		$headers       = array_shift( $raw_array );
 		$keyed_array   = array();
 		$resource_list = array();
+
 	
 		foreach ($raw_array as $index => $array) {
 			$row = $this->_map_array_keys($headers, $array);
 			$keyed_array[$index] = $row;
 		}
 
-
 		foreach( $keyed_array as $row ) {
-			$data = $this->_create_resource_array( $row );
-
-			$resource = new Resource( $data );
+			$resource = new Resource( $row );
 			array_push( $resource_list, $resource );
 		}
 		return $resource_list;
 	}
 
-	private function _create_resource_array( $row ) {
-		$resource_array = array(
-			'postdata'    => array(),
-			'postmeta'    => array(),
-			'attachments' => array(),
-			'tags'        => array(),
-			'connections' => array(),
-		);
 
-		foreach( $row as $key => $value ) {
-
-			if( $key == 'upload_id' ) {
-				$resource_array['id'] = $value;
-			} elseif( in_array( $key, $this->post_fields ) ) {
-				$resource_array['postdata'][$key] = $value;
-			
-
-			} elseif( preg_match( "/attachment\[[a-zA-Z-_]+\]/", $key) ) {
-				if ($value) {
-					$matches = array();
-					preg_match( "/attachment\[([a-zA-Z-_]+)\]/", $key, $matches );
-
-					$attachment = array(
-						"field" => $matches[1],
-						"file_path" => trim($value),
-					);
-					$resource_array['attachments'][] = $attachment;
-				}
-
-
-			} elseif( preg_match( "/tag\[[a-zA-Z-_]+\]/", $key ) ) {
-				$matches = array();
-				preg_match( "/tag\[([a-zA-Z-_]+)\]/", $key, $matches );
-
-				$resource_array['tags'][] = array(
-					'taxonomy' => $matches[1],
-					'term' => $value
-				);
-			} elseif( preg_match( "/connection\[[a-zA-Z-_]+\]\[[\d]+\]/", $key ) ) {
-				$matches = array();
-				preg_match( "/connection\[([a-zA-Z-_]+)\]\[([\d]+)\]/", $key, $matches );
-				
-				if( ! empty( $value ) ) {
-					$resource_array['connections'][] = array(
-						'type' => $matches[1],
-						'to' => $matches[2]
-					);
-				}
-			} else {
-				$resource_array['postmeta'][$key] = $value;
-			}
-		}
-
-		return $resource_array;
-	}
 
 	/**
 	 * Creates new PostUploader objects and saves the Resource to the database.
@@ -183,7 +127,7 @@ class ResourceList {
 				$resource->tags() 
 			);
 			
-			$status = $post->save();
+			// $status = $post->save();
 			
 			if ( $status !== true ) {
 				array_push( $this->errors, $status );

@@ -6,10 +6,11 @@ Class JDI_Controller extends JDI_PluginObject {
 	private $errors = array();
 
 	function __construct() {
-		require_once( "ResourceList.php" );
-		require_once( "Resource.php" );
-		require_once( "PostUploader.php" );
+		require_once( "core/ResourceList.php" );
+		require_once( "core/Resource.php" );
+		require_once( "core/PostUploader.php" );
 		require_once( "SettingsHtml.php" );
+		require_once( "Processor.php" );
 
 		add_action( "admin_menu", array($this, "backend_init") );
 	}
@@ -19,26 +20,7 @@ Class JDI_Controller extends JDI_PluginObject {
 	}
 
 	public function backend_render() {
-		$settings = new JDI_SettingsHtml();
-
-		if ( isset($_POST["jdi-import"])) {
-			if ( empty($_FILES["post-list"]["name"]) ) {
-				$settings->add_message("error", "Please select a file to upload.");
-			} elseif ( filetype($_FILES["post-list"]["tmp_name"]) != "csv" ) {
-				$settings->add_message("error", "Please only upload a .csv file.");
-			} else {
-				$this->import();
-			}
-		}
-		
-		$this->import();
-		$settings->display();
-
+		$this->settings = new JDI_SettingsHtml();
+		$this->settings->display();
 	}
-
-	private function import() { 
-		$csv = new ResourceList( __DIR__ . "/elgin/elg_brochures.csv" );
-		$csv->import();
-	}
-
 }
