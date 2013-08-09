@@ -16,7 +16,7 @@ Class JDI_Processor extends JDI_PluginObject {
 		}
 		
 		// Testing
-		$this->ResourceList = new JDI_ResourceList( __DIR__ . "/test-data/data.csv" );
+		$this->ResourceList = new JDI_ResourceList( __DIR__ . "/elgin/elg_brochures.csv" );
 		$this->ResourceList->import();
 	}
 

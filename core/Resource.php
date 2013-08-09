@@ -85,7 +85,6 @@ Class JDI_Resource extends JDI_PluginObject {
 		if( $key == 'upload_id' ) {
 			
 			$this->id = $value;
-			$this->postmeta[$key] = $value;
 
 		} elseif( in_array( $key, $this->post_fields ) ) {
 		
@@ -99,9 +98,9 @@ Class JDI_Resource extends JDI_PluginObject {
 			$this->tags[] = $this->assign_term($key, $value);
 
 		} elseif( preg_match( "/connection\[[a-zA-Z-_]+\]\[[\d]+\]/", $key ) ) {
-
-			$this->connections[] = $this->create_p2p_connection($key, $value);
-
+			if( ! empty( $value ) ) {
+				$this->connections[] = $this->create_p2p_connection($key, $value);
+			}
 		} else {
 
 			$this->postmeta[$key] = $value;
@@ -134,12 +133,10 @@ Class JDI_Resource extends JDI_PluginObject {
 	private function create_p2p_connection($key, $value) {
 		$matches = array();
 		preg_match( "/connection\[([a-zA-Z-_]+)\]\[([\d]+)\]/", $key, $matches );
-		
-		if( ! empty( $value ) ) {
-			return array(
-				'type' => $matches[1],
-				'to'   => $matches[2]
-			);
-		}
+
+		return array(
+			'type' => $matches[1],
+			'to'   => $matches[2]
+		);
 	}
 }

@@ -12,14 +12,16 @@ Class JDI_PostUploader extends JDI_PluginObject {
 	private $errors = array();
 
 	public function __construct( $resource ) {
+		self::plugin_info();
 		$this->resource = $resource;
+		$this->resource->postmeta[self::$record_id_meta_name] = $this->resource->id;
 	}
 
 	public function save() {
-		$this->resource->id = $this->save_post();
+		$this->id = $this->save_post();
 		
-		if( !$this->resource->id ) {
-			$this->errors[] = "Total Post Failure for post: " . $this->resource->id;
+		if( !$this->id ) {
+			$this->errors[] = "Total Post Failure for post: " . $this->id;
 			return $this->errors;
 		}
 
@@ -39,13 +41,13 @@ Class JDI_PostUploader extends JDI_PluginObject {
 		$post_id = $this->post_exists();
 
 		if ( $post_id ) {
-			$this->resource->id         = $post_id;
-			$this->resource->postdata['ID'] = $this->resource->id;
+			$this->id                       = $post_id;
+			$this->resource->postdata['ID'] = $this->id;
 			wp_update_post( $this->resource->postdata );
 		} else {
-			$this->resource->id = wp_insert_post( $this->resource->postdata );
+			$this->id = wp_insert_post( $this->resource->postdata );
 		}
-		return $this->resource->id;
+		return $this->id;
 	}
 
 	private function post_exists() {
@@ -66,19 +68,19 @@ Class JDI_PostUploader extends JDI_PluginObject {
 	}
 
 	private function save_postmeta() {
-		if( ! empty($this->resource->postmeta) && $this->resource->id ) {
+		if( ! empty($this->resource->postmeta) && $this->id ) {
 			foreach( $this->resource->postmeta as $meta_key => $meta_value ) {
 				$meta_update_status = $this->save_single_postmeta( $meta_key, $meta_value );
 				if( ! $meta_update_status ) {
-					$this->errors = "$meta_key meta failed for post with ID={$this->resource->id}";
+					$this->errors = "$meta_key meta failed for post with ID={$this->id}";
 				}
 			}
 		}
 	}
 
 	private function save_single_postmeta( $meta_key, $meta_value ) {
-		if( $this->resource->id ){
-			$meta_updated_status = update_post_meta( $this->resource->id, $meta_key, $meta_value);
+		if( $this->id ){
+			$meta_updated_status = update_post_meta( $this->id, $meta_key, $meta_value);
 			return $meta_updated_status;
 		}
 		return false;
@@ -88,7 +90,7 @@ Class JDI_PostUploader extends JDI_PluginObject {
 		if( ! empty( $this->resource->connections ) ) {
 			foreach( $this->resource->connections as $connection ) {
 				try{
-					$connection_status = p2p_type( $connection['type'] )->connect( $this->resource->id, $connection['to'], array(
+					$connection_status = p2p_type( $connection['type'] )->connect( $this->id, $connection['to'], array(
 						'date' => current_time('mysql')
 					) );
 
@@ -118,12 +120,12 @@ Class JDI_PostUploader extends JDI_PluginObject {
 	private function save_single_attachment( $attachment ) {
 		$file_path = $attachment['file_path'];
 		if( $file_path[0] != '/' ) {
-			$file_path = "/".$file_path );
+			$file_path = "/".$file_path;
 		}
 
-		if( is_file( __DIR__ . $file_path ) ){
+		if( is_file( self::$plugin_path . "elgin" . $file_path ) ){
 			
-			$file_path = __DIR__ . $file_path;
+			$file_path = self::$plugin_path . "elgin" . $file_path;
 
 			$wp_filetype = wp_check_filetype( basename( $file_path ), null );
 			
@@ -131,21 +133,21 @@ Class JDI_PostUploader extends JDI_PluginObject {
 			$file["name"]     = basename( $file_path );
 			$file["type"]     = $wp_filetype;
 			$file["tmp_name"] = $file_path;
-			$attachment_id    = media_handle_sideload( $file, $this->resource->id );
+			$attachment_id    = media_handle_sideload( $file, $this->id );
 
 			if( is_a( $attachment_id, 'WP_Error') ) {
-				$this->errors[] = "Upload error for post ID: {$this->resource->id}. Could not upload ".$file['name'];
+				$this->errors[] = "Upload error for post ID: {$this->id}. Could not upload ".$file['name'];
 
 				return false;
 			}
 
 			if ($attachment["field"] == "_thumbnail_id") {
-				return update_post_meta( $this->resource->id, $attachment["field"], $attachment_id );
+				return update_post_meta( $this->id, $attachment["field"], $attachment_id );
 			} else {
-				return update_post_meta( $this->resource->id, $attachment["field"], wp_get_attachment_url( $attachment_id ) );
+				return update_post_meta( $this->id, $attachment["field"], wp_get_attachment_url( $attachment_id ) );
 			}
 		} else {
-			$this->errors[] = "File not found for post ID={$this->resource->id}";
+			$this->errors[] = "File not found for post ID={$this->id}";
 		} 
 		return false;
 	}
@@ -155,7 +157,7 @@ Class JDI_PostUploader extends JDI_PluginObject {
 		if( $this->resource->tags ) {
 			$errors = array();
 			foreach( $this->resource->tags as $tag ) {
-				$saved = wp_set_object_terms( $this->resource->id, $tag["term"], $tag["taxonomy"] );
+				$saved = wp_set_object_terms( $this->id, $tag["term"], $tag["taxonomy"] );
 			}
 		}
 	}
@@ -169,7 +171,7 @@ Class JDI_PostUploader extends JDI_PluginObject {
 	 * @return string Returns the id of the resource.
 	 */
 	public function id() {
-		return $this->resource->id;
+		return $this->id;
 	}
 
 	/**

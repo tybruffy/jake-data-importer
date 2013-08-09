@@ -24,7 +24,7 @@ Class JDI_ResourceList extends JDI_PluginObject {
 		if( ! empty( $this->resources ) ) {
 			$this->save_resources_to_db();
 		}
-		// echo "<pre>" . print_r($this->errors, true) . "</pre>";
+		echo "<pre>" . print_r($this->errors, true) . "</pre>";
 	}
 
 
