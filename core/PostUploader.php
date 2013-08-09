@@ -117,8 +117,8 @@ Class JDI_PostUploader extends JDI_PluginObject {
 
 	private function save_single_attachment( $attachment ) {
 		$file_path = $attachment['file_path'];
-		if( $file_path[0] == '/' ) {
-			$file_path = substr( $attachment['file_path'], 1 );
+		if( $file_path[0] != '/' ) {
+			$file_path = "/".$file_path );
 		}
 
 		if( is_file( __DIR__ . $file_path ) ){
