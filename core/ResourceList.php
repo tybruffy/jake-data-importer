@@ -1,34 +1,7 @@
 <?php
-class ResourceList {
+Class JDI_ResourceList extends JDI_PluginObject {
 	private $resources = null;
 	private $errors = array();
-
-
-	/**
-	 * List of fields to be put into the post_data array.
-	 * @var array
-	 */
-	private $post_fields = array(          
-			'menu_order',
-			'comment_status',
-			'ping_status',
-			'pinged',
-			'post_author',
-			'post_category',
-			'post_content',
-			'post_date',
-			'post_date_gmt',
-			'post_excerpt',
-			'post_name',
-			'post_parent',
-			'post_password',
-			'post_status',
-			'post_title',
-			'post_type',
-			'tags_input',
-			'to_ping',
-			'tax_input',
-		);
 
 	/**
 	 * Create the ResourceList Object from the filepath provided.
@@ -44,8 +17,10 @@ class ResourceList {
 	 * @return [type] [description]
 	 */
 	public function import() {
-		$file_array = $this->_parse_file();
-		$this->resources = $this->array_to_resource( $file_array );
+		$file_array      = $this->_parse_file();
+		$keyed_array     = $this->_create_keyed_array( $file_array );
+		$this->resources = $this->array_to_resource( $keyed_array );
+
 		if( ! empty( $this->resources ) ) {
 			$this->save_resources_to_db();
 		}
@@ -87,24 +62,31 @@ class ResourceList {
 
 
 	/**
-	 * Convert the raw array of data rows into Resource objects
+	 * Convert the raw file data into a set of keyed arrays.
+	 * @param  array $raw_data The raw data
+	 * @return array           The keyed data
+	 */
+	private function _create_keyed_array($raw_data) {
+		$headers = array_shift($raw_data);
+		$cleaned = array();
+		foreach ($raw_data as $index => $array) {
+			$row = $this->_map_array_keys($headers, $array);
+			$cleaned[$index] = $row;
+		}
+		return $cleaned;
+	}
+
+	/**
+	 * Convert the keyed array of data rows into Resource objects
 	 * @param  array $raw_array The array of rows to create.
 	 * @return array            An array of Resource objects.
 	 */
-	private function array_to_resource( $raw_array ) {
-		$headers       = array_shift( $raw_array );
-		$keyed_array   = array();
+	private function array_to_resource($keyed_array) {
 		$resource_list = array();
 
-	
-		foreach ($raw_array as $index => $array) {
-			$row = $this->_map_array_keys($headers, $array);
-			$keyed_array[$index] = $row;
-		}
-
 		foreach( $keyed_array as $row ) {
-			$resource = new Resource( $row );
-			array_push( $resource_list, $resource );
+			$resource = new JDI_Resource( $row );
+			$resource_list[] = $resource;
 		}
 		return $resource_list;
 	}
@@ -118,16 +100,9 @@ class ResourceList {
 	private function save_resources_to_db() {
 		foreach( $this->resources as $resource ) {
 			
-			$post = new PostUploader( 
-				$resource->id(),
-				$resource->postdata(), 
-				$resource->postmeta(), 
-				$resource->connections(),
-				$resource->attachments(), 
-				$resource->tags() 
-			);
+			$post = new JDI_PostUploader( $resource );
 			
-			// $status = $post->save();
+			$status = $post->save();
 			
 			if ( $status !== true ) {
 				array_push( $this->errors, $status );

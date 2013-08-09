@@ -16,7 +16,7 @@ Class JDI_Processor extends JDI_PluginObject {
 		}
 		
 		// Testing
-		$this->ResourceList = new ResourceList( __DIR__ . "/test-data/data.csv" );
+		$this->ResourceList = new JDI_ResourceList( __DIR__ . "/test-data/data.csv" );
 		$this->ResourceList->import();
 	}
 
@@ -31,7 +31,7 @@ Class JDI_Processor extends JDI_PluginObject {
 	}
 
 	private function import() {
-		$this->ResourceList = new ResourceList( $this->file_array["post-list"]["name"] );
+		$this->ResourceList = new JDI_ResourceList( $this->file_array["post-list"]["name"] );
 		$this->ResourceList->import();
 	}
 }

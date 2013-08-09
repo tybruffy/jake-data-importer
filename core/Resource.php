@@ -1,11 +1,12 @@
 <?php
-class Resource {
-	private $id;
-	private $postdata    = array();
-	private $postmeta    = array();
-	private $connections = array();
-	private $attachments = array();
-	private $tags        = array();
+
+Class JDI_Resource extends JDI_PluginObject {
+	public $id;
+	public $postdata    = array();
+	public $postmeta    = array();
+	public $connections = array();
+	public $attachments = array();
+	public $tags        = array();
 
 	/**
 	 * List of fields to be put into the post_data array.
@@ -36,11 +37,24 @@ class Resource {
 	public function __construct( $fields ) {
 		foreach( $fields as $field_name => $field_value ) {
 			$this->_parse_resource_fields( $field_name, $field_value );
+
+			// Set post_status if not explicitly set.
+			if( ! isset( $this->postdata['post_status'] ) ) {
+				$this->postdata['post_status'] = 'publish';
+			}
+
+			// Strip out wordpress IDs from postdata
+			if( isset( $this->postdata['ID'] ) ) {
+				unset( $this->postdata['ID'] );
+			}
+
 		}
 
-		echo "<pre>" . print_r($this, true) . "</pre>";
-
+		// A wee bit of object cleanup
+		unset($this->post_fields);
 	}
+
+
 
 	public function id() {
 		return $this->id;
@@ -71,6 +85,7 @@ class Resource {
 		if( $key == 'upload_id' ) {
 			
 			$this->id = $value;
+			$this->postmeta[$key] = $value;
 
 		} elseif( in_array( $key, $this->post_fields ) ) {
 		
@@ -89,7 +104,7 @@ class Resource {
 
 		} else {
 
-			$this->postmeta[$key] = $resource_array['postmeta'][$key] = $value;
+			$this->postmeta[$key] = $value;
 
 		}
 	}
