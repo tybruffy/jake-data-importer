@@ -142,7 +142,7 @@ Class JDI_PostUploader extends JDI_PluginObject {
 			if ($attachment["field"] == "_thumbnail_id") {
 				return update_post_meta( $this->resource->id, $attachment["field"], $attachment_id );
 			} else {
-				return update_post_meta( $this->resource->id, $attachment["field"], $file_path );
+				return update_post_meta( $this->resource->id, $attachment["field"], wp_get_attachment_url( $attachment_id ) );
 			}
 		} else {
 			$this->errors[] = "File not found for post ID={$this->resource->id}";
