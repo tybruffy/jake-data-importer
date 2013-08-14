@@ -7,7 +7,7 @@ Class JDI_PostUploader extends JDI_PluginObject {
 	private $postmeta;
 	private $connections;
 	private $attachments;
-	private $tags;
+	private $terms;
 
 	private $errors = array();
 
@@ -28,7 +28,8 @@ Class JDI_PostUploader extends JDI_PluginObject {
 		$this->save_postmeta();
 		$this->save_connections();
 		$this->save_attachements();
-		$this->save_tags();
+		$this->save_connected_media();
+		$this->save_terms();
 
 		if( empty( $this->errors ) ) {
 			return true;
@@ -87,20 +88,29 @@ Class JDI_PostUploader extends JDI_PluginObject {
 	}
 
 	private function save_connections() {
-		if( ! empty( $this->resource->connections ) ) {
-			foreach( $this->resource->connections as $connection ) {
-				try{
-					$connection_status = p2p_type( $connection['type'] )->connect( $this->id, $connection['to'], array(
-						'date' => current_time('mysql')
-					) );
+		foreach( $this->resource->connections as $connection ) {
+			$connection = $this->save_single_connection($connection['type'], $this->id, $connection['to']);
+		}
+	}
 
-					if( !$connection_status ) {
-						$this->errors[] = "Failed to create connection with Post ID={$this->post_id}";
-					}
-				} catch(Exception $e) {
-					$this->errors[] = "Failed to create connection with Post ID={$this->post_id}: Exception: " . $e->getMessage();
-				}
+	private function save_connected_media() {
+		foreach( $this->resource->connected_media as $connection ) {
+			$attachment = $this->save_single_attachment($connection);
+			$connection["to"] = $attachment;
+			$connection = $this->save_single_connection($connection);
+		}
+	}
+
+	private function save_single_connection( $connection ) {
+		try{
+			$p2p = p2p_type( $connection['type'] );
+			$connection = $p2p->connect( $this->id, $connection['to'], array('date' => current_time('mysql')) );
+
+			if( !$connection ) {
+				$this->errors[] = "Failed to create connection with Post ID = {$this->id}";
 			}
+		} catch(Exception $e) {
+			$this->errors[] = "Failed to create connection with Post ID = {$this->id}: Exception: " . $e->getMessage();
 		}
 	}
 
@@ -112,59 +122,37 @@ Class JDI_PostUploader extends JDI_PluginObject {
 			require_once( ABSPATH . "wp-admin" . '/includes/media.php' );
 
 			foreach( $this->resource->attachments as $attachment ) {
-				$this->save_single_attachment( $attachment );
+				$this->save_single_attachment($attachment);
 			}
 		}
 	}
 
 	private function save_single_attachment( $attachment ) {
-		$file_path = $attachment['file_path'];
-		if( $file_path[0] != '/' ) {
-			$file_path = "/".$file_path;
+		$attachment->save();
+
+		if ($attachment->field == "_thumbnail_id") {
+			return $this->save_single_postmeta($attachment->get('field'), $attachment->get('id'));
+		} elseif ($attachment->field) {
+			return $this->save_single_postmeta($attachment->get('field'), $attachment->get('url'));
+		} elseif ($attachment->connection) {
+			return $this->save_single_connection($attachment->get('connection'), $this->id, $attachment->get('id'));
 		}
-
-		if( is_file( self::$plugin_path . "elgin" . $file_path ) ){
-			
-			$file_path = self::$plugin_path . "elgin" . $file_path;
-
-			$wp_filetype = wp_check_filetype( basename( $file_path ), null );
-			
-			$file             = array();
-			$file["name"]     = basename( $file_path );
-			$file["type"]     = $wp_filetype;
-			$file["tmp_name"] = $file_path;
-			$attachment_id    = media_handle_sideload( $file, $this->id );
-
-			if( is_a( $attachment_id, 'WP_Error') ) {
-				$this->errors[] = "Upload error for post ID: {$this->id}. Could not upload ".$file['name'];
-
-				return false;
-			}
-
-			if ($attachment["field"] == "_thumbnail_id") {
-				return update_post_meta( $this->id, $attachment["field"], $attachment_id );
-			} else {
-				return update_post_meta( $this->id, $attachment["field"], wp_get_attachment_url( $attachment_id ) );
-			}
-		} else {
-			$this->errors[] = "File not found for post ID={$this->id}";
-		} 
-		return false;
+		return $attachment->id;
 	}
 
 
-	public function save_tags() {
-		if( $this->resource->tags ) {
+	public function save_terms() {
+		if( $this->resource->terms ) {
 			$errors = array();
-			foreach( $this->resource->tags as $tag ) {
-				$saved = wp_set_object_terms( $this->id, $tag["term"], $tag["taxonomy"] );
+			foreach( $this->resource->terms as $term ) {
+				$saved = wp_set_object_terms( $this->id, $term["term"], $term["taxonomy"] );
 			}
 		}
 	}
 
 
 
-	// TODO: Could all be combined into _get() function.
+	// TODO: Could all be combined into _get() function
 	
 	/**
 	 * Returns the ID of the resource.

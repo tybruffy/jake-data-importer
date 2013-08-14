@@ -2,11 +2,12 @@
 
 Class JDI_Resource extends JDI_PluginObject {
 	public $id;
-	public $postdata    = array();
-	public $postmeta    = array();
-	public $connections = array();
-	public $attachments = array();
-	public $tags        = array();
+	public $postdata        = array();
+	public $postmeta        = array();
+	public $connections     = array();
+	public $attachments     = array();
+	public $connected_media = array();
+	public $terms           = array();
 
 	/**
 	 * List of fields to be put into the post_data array.
@@ -76,8 +77,8 @@ Class JDI_Resource extends JDI_PluginObject {
 		return $this->attachments;
 	}
 
-	public function tags() {
-		return $this->tags;
+	public function terms() {
+		return $this->terms;
 	}
 
 	private function _parse_resource_fields( $key, $value ) {
@@ -93,13 +94,17 @@ Class JDI_Resource extends JDI_PluginObject {
 		} elseif( preg_match( "/attachment\[[a-zA-Z-_]+\]/", $key) ) {
 			$this->attachments[] = $this->assign_attachment($key, $value);
 
-		} elseif( preg_match( "/tag\[[a-zA-Z-_]+\]/", $key ) ) {
+		} elseif( preg_match( "/term\[[a-zA-Z-_]+\]/", $key ) ) {
 
-			$this->tags[] = $this->assign_term($key, $value);
+			$this->terms[] = $this->assign_term($key, $value);
 
 		} elseif( preg_match( "/connection\[[a-zA-Z-_]+\]\[[\d]+\]/", $key ) ) {
 			if( ! empty( $value ) ) {
-				$this->connections[] = $this->create_p2p_connection($key, $value);
+				$this->connections[] = $this->assign_connection($key, $value);
+			}
+		} elseif( preg_match( "/connected_media\[[a-zA-Z-_]+\]\[[\d]+\]/", $key ) ) {
+			if( ! empty( $value ) ) {
+				$this->connected_media[] = $this->assign_connected_media($key, $value);
 			}
 		} else {
 
@@ -113,10 +118,12 @@ Class JDI_Resource extends JDI_PluginObject {
 			$matches = array();
 			preg_match( "/attachment\[([a-zA-Z-_]+)\]/", $key, $matches );
 
-			return array(
-				"field"     => $matches[1],
-				"file_path" => trim($value),
-			);
+			JDI_Attachment::set_root($self::$plugin_path."/elgin/");
+			new JDI_Attachment(trim($value));
+
+			$attachment->set_meta_field($matches[1]);	
+
+			return $attachment;
 		}
 	}
 
@@ -130,7 +137,7 @@ Class JDI_Resource extends JDI_PluginObject {
 		);	
 	}
 
-	private function create_p2p_connection($key, $value) {
+	private function assign_connection($key, $value) {
 		$matches = array();
 		preg_match( "/connection\[([a-zA-Z-_]+)\]\[([\d]+)\]/", $key, $matches );
 
@@ -139,4 +146,16 @@ Class JDI_Resource extends JDI_PluginObject {
 			'to'   => $matches[2]
 		);
 	}
+
+	private function assign_connected_media($key, $value) {
+		$matches = array();
+		preg_match( "/connected_media\[[a-zA-Z-_]+\]/", $key, $matches );
+
+		JDI_Attachment::set_root($self::$plugin_path."/elgin/");
+		new JDI_Attachment(trim($value));
+
+		$attachment->set_connection($matches[1]);	
+
+		return $attachment;
+	}	
 }

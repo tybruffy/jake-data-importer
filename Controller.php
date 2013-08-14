@@ -8,6 +8,7 @@ Class JDI_Controller extends JDI_PluginObject {
 	function __construct() {
 		require_once( "core/ResourceList.php" );
 		require_once( "core/Resource.php" );
+		require_once( "core/Attachment.php" );
 		require_once( "core/PostUploader.php" );
 		require_once( "SettingsHtml.php" );
 		require_once( "Processor.php" );
